@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dispensador MED-ROTOR</title>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --accent:#58a6ff;--gold:#d4a017;--gold2:#f0c040;
+  --steel:#8b949e;--steel2:#c9d1d9;
+  --green:#3fb950;--red:#f85149;--orange:#f0883e;--purple:#bc8cff;
+  --teal:#39d5c5;--text:#c9d1d9;--text2:#8b949e;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* HEADER */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;}
+.hdr-title{font-size:13px;color:var(--steel);letter-spacing:.1em;text-transform:uppercase;}
+.hdr-title span{color:var(--accent);}
+.btn{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 14px;font-size:12px;color:var(--text2);cursor:pointer;transition:.2s;font-family:inherit;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.act{border-color:var(--accent);color:var(--accent);background:rgba(88,166,255,.09);}
+.btn.stop{border-color:var(--red);color:var(--red);}
+.btn.disp{border-color:var(--green);color:var(--green);font-size:13px;}
+.btn.disp:hover{background:rgba(63,185,80,.1);}
+
+/* WORKSPACE */
+.workspace{flex:1;display:flex;overflow:hidden;position:relative;}
+.canvas-area{flex:1;position:relative;overflow:hidden;}
+canvas#main{display:block;width:100%;height:100%;}
+
+/* SIDE PANEL */
+.side{width:380px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.side-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:10px 6px;font-size:12px;font-family:inherit;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;letter-spacing:.05em;transition:.2s;text-transform:uppercase;}
+.stab.act{color:var(--accent);border-bottom-color:var(--accent);}
+.stab-panel{display:none;flex:1;flex-direction:column;overflow-y:auto;}
+.stab-panel.act{display:flex;}
+
+/* CONTROLS PANEL */
+.ctrl-section{padding:16px 18px;border-bottom:1px solid var(--border);}
+.ctrl-title{font-size:12px;letter-spacing:.09em;color:var(--text2);text-transform:uppercase;margin-bottom:14px;font-weight:700;}
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+.ctrl-label{font-size:14px;color:var(--text2);min-width:100px;}
+.ctrl-right{display:flex;align-items:center;gap:8px;}
+.ctrl-val{font-size:16px;font-weight:700;color:var(--gold2);min-width:52px;text-align:right;}
+.ctrl-unit{font-size:11px;color:var(--text2);}
+.nudge{width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:16px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0;}
+.nudge:hover{border-color:var(--accent);color:var(--accent);}
+.nudge:active{transform:scale(.92);}
+input[type=range]{flex:1;min-width:80px;accent-color:var(--gold2);cursor:pointer;height:6px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.toggle-label{font-size:14px;color:var(--text2);}
+.toggle-track{position:relative;width:44px;height:24px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .2s;}
+.toggle-track.on{background:rgba(63,185,80,.25);border-color:var(--green);}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--text2);border-radius:50%;transition:transform .2s,background .2s;}
+.toggle-track.on .toggle-thumb{transform:translateX(20px);background:var(--green);}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.05em;}
+.badge.g{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);}
+.badge.r{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3);}
+.badge.o{background:rgba(240,136,62,.15);color:var(--orange);border:1px solid rgba(240,136,62,.3);}
+
+/* STATUS PANEL */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 12px;}
+.stat-card-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.stat-card-val{font-size:26px;font-weight:700;line-height:1;}
+.stat-card-unit{font-size:11px;color:var(--text2);margin-top:2px;}
+.hbar-wrap{padding:0 18px 16px;}
+.hbar{margin-bottom:12px;}
+.hlabel{font-size:13px;color:var(--text2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
+.hname{font-weight:700;}
+.btrack{background:var(--bg);border-radius:3px;height:13px;overflow:hidden;border:1px solid var(--border);}
+.bfill{height:100%;border-radius:3px;transition:width .5s;}
+
+/* LOG PANEL */
+.log-wrap{flex:1;overflow-y:auto;padding:12px 18px;}
+.log-stitle{font-size:13px;letter-spacing:.09em;color:var(--text2);text-transform:uppercase;margin-bottom:12px;font-weight:700;}
+.log-entry{padding:10px 0;border-bottom:1px solid rgba(48,54,61,.6);animation:fadeIn .25s ease;}
+.log-ts{color:var(--accent);font-size:12px;margin-bottom:3px;}
+.log-med{font-weight:700;font-size:16px;margin-bottom:2px;}
+.log-detail{font-size:12px;color:var(--steel);line-height:1.5;}
+@keyframes fadeIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:none}}
+
+/* MODAL */
+.modal-bg{position:absolute;inset:0;background:rgba(8,10,18,.9);z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-bg.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:380px;overflow:hidden;}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;color:var(--steel2);letter-spacing:.06em;}
+.close-x{background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:4px;cursor:pointer;font-size:16px;font-family:inherit;line-height:1;transition:.2s;}
+.close-x:hover{border-color:var(--red);color:var(--red);}
+.modal-body{padding:20px;}
+.med-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;}
+.med-card{background:var(--bg3);border:2px solid var(--border);border-radius:9px;padding:16px 10px;text-align:center;cursor:pointer;transition:.2s;}
+.med-card:hover{transform:translateY(-3px);}
+.med-icon{font-size:32px;margin-bottom:8px;}
+.med-name{font-size:12px;font-weight:700;letter-spacing:.05em;margin-bottom:3px;}
+.med-sub{font-size:10px;color:var(--text2);}
+.med-lvl-bar{margin-top:8px;background:var(--bg);border-radius:2px;height:6px;overflow:hidden;}
+.med-lvl-fill{height:100%;border-radius:2px;transition:width .4s;}
+.confirm-btn{width:100%;padding:13px;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;transition:.2s;background:rgba(63,185,80,.1);border:1px solid var(--green);color:var(--green);}
+.confirm-btn:hover:not(:disabled){background:rgba(63,185,80,.22);}
+.confirm-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* INTERIOR */
+.int-overlay{position:absolute;inset:0;background:rgba(8,10,18,.96);z-index:20;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.int-overlay.open{opacity:1;pointer-events:all;}
+.int-panel{background:var(--bg2);border:1px solid var(--border);border-radius:9px;width:min(820px,97vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.int-hdr{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.int-title{font-size:14px;color:var(--steel2);letter-spacing:.07em;}
+.int-body{flex:1;overflow:auto;padding:16px;display:flex;gap:16px;flex-wrap:wrap;}
+canvas#interior{display:block;width:100%;height:340px;background:#0a0c14;border-radius:6px;border:1px solid var(--border);}
+.int-info{width:200px;display:flex;flex-direction:column;gap:10px;}
+.icard{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:13px;}
+.icard-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:10px;}
+.mval{font-size:24px;font-weight:700;color:var(--gold2);line-height:1;}
+.munit{font-size:11px;color:var(--text2);}
+.isrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:12px;}
+.isk{color:var(--text2);}
+.isv{color:var(--text);font-weight:700;}
+.vtabs{display:flex;gap:5px;margin-bottom:10px;}
+.vtab{flex:1;padding:6px 7px;font-size:10px;font-family:inherit;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:3px;cursor:pointer;text-align:center;transition:.2s;}
+.vtab.act{border-color:var(--purple);color:var(--purple);background:rgba(188,140,255,.07);}
+
+/* TOAST */
+.toast{position:absolute;bottom:55px;left:50%;transform:translateX(-50%);background:rgba(18,28,18,.97);border:1px solid var(--green);border-radius:6px;padding:9px 22px;font-size:13px;color:var(--green);opacity:0;transition:opacity .3s;pointer-events:none;z-index:5;white-space:nowrap;letter-spacing:.07em;}
+.toast.show{opacity:1;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title">DISPENSADOR <span>MED-ROTOR</span> v5.0</div>
+  <span style="color:var(--border)">|</span>
+  <button class="btn" id="btnRun" onclick="toggleRun()">▶ INICIAR</button>
+  <button class="btn stop" onclick="stopAll()">■ DETENER</button>
+  <button class="btn disp" onclick="openDispModal()">💊 DISPENSAR</button>
+  <button class="btn" onclick="openInterior()">🔍 VER INTERIOR</button>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+  <div class="canvas-area">
+    <canvas id="main"></canvas>
+    <div class="toast" id="toast"></div>
+
+    <!-- DISPENSE MODAL -->
+    <div class="modal-bg" id="dispModal">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">💊 SELECCIONAR MEDICAMENTO</div>
+          <button class="close-x" onclick="closeDispModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="med-grid" id="medGrid"></div>
+          <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmDispense()">SELECCIONA UN MEDICAMENTO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERIOR -->
+    <div class="int-overlay" id="intOverlay">
+      <div class="int-panel">
+        <div class="int-hdr">
+          <div class="int-title">VISTA INTERIOR — MECANISMO ROTATORIO</div>
+          <button class="close-x" onclick="closeInterior()">✕</button>
+        </div>
+        <div class="int-body">
+          <div style="flex:1;min-width:300px;">
+            <div class="vtabs">
+              <button class="vtab act" id="vt0" onclick="setView(0)">Engranaje</button>
+              <button class="vtab" id="vt1" onclick="setView(1)">Cadena</button>
+              <button class="vtab" id="vt2" onclick="setView(2)">Eje</button>
+            </div>
+            <canvas id="interior"></canvas>
+          </div>
+          <div class="int-info">
+            <div class="icard">
+              <div class="icard-title">Rotor</div>
+              <div class="mval" id="rpmD">0</div><div class="munit">RPM</div>
+              <div style="margin-top:9px;" class="isrow"><span class="isk">Dirección</span><span class="isv" id="dirD">CW</span></div>
+              <div class="isrow"><span class="isk">Ciclos</span><span class="isv" id="cycD">0</span></div>
+              <div class="isrow"><span class="isk">Temp.</span><span class="isv" id="tempD">24°C</span></div>
+            </div>
+            <div class="icard">
+              <div class="icard-title">Cadena 65cm</div>
+              <div class="isrow"><span class="isk">Eslabones</span><span class="isv">52</span></div>
+              <div class="isrow"><span class="isk">Tensión</span><span class="isv" style="color:var(--green)">NORMAL</span></div>
+              <div class="isrow"><span class="isk">Relación</span><span class="isv">1:1.4</span></div>
+            </div>
+            <div class="icard">
+              <div class="icard-title">Dispensaciones</div>
+              <div class="isrow"><span class="isk">Total</span><span class="isv" id="tracTotal">0</span></div>
+              <div class="isrow"><span class="isk">Último</span><span class="isv" id="tracLast" style="font-size:11px">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side">
+    <div class="side-tabs">
+      <button class="stab act" id="tab0" onclick="showTab(0)">CONTROL</button>
+      <button class="stab" id="tab1" onclick="showTab(1)">ESTADO</button>
+      <button class="stab" id="tab2" onclick="showTab(2)">TRAZAB.</button>
+    </div>
+
+    <!-- TAB 0: CONTROLS -->
+    <div class="stab-panel act" id="panel0">
+      <div class="ctrl-section">
+        <div class="ctrl-title">Motor / Velocidad</div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label">RPM</span>
+          <div class="ctrl-right">
+            <button class="nudge" onclick="adjRPM(-10)">−</button>
+            <input type="range" id="rpmRange" min="10" max="300" step="5" value="72"
+              oninput="setRPM(parseInt(this.value))">
+            <button class="nudge" onclick="adjRPM(+10)">+</button>
+            <span class="ctrl-val" id="rpmVal">72</span>
+            <span class="ctrl-unit">RPM</span>
+          </div>
+        </div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label">Torque</span>
+          <div class="ctrl-right">
+            <button class="nudge" onclick="adjTorque(-5)">−</button>
+            <input type="range" id="torqRange" min="5" max="100" step="5" value="60"
+              oninput="setTorque(parseInt(this.value))">
+            <button class="nudge" onclick="adjTorque(+5)">+</button>
+            <span class="ctrl-val" id="torqVal">60</span>
+            <span class="ctrl-unit">%</span>
+          </div>
+        </div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label">Aceleración</span>
+          <div class="ctrl-right">
+            <button class="nudge" onclick="adjAccel(-1)">−</button>
+            <input type="range" id="accelRange" min="1" max="10" step="1" value="5"
+              oninput="setAccel(parseInt(this.value))">
+            <button class="nudge" onclick="adjAccel(+1)">+</button>
+            <span class="ctrl-val" id="accelVal">5</span>
+            <span class="ctrl-unit">/10</span>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Dirección CW/CCW</span>
+          <div class="toggle-track" id="dirToggle" onclick="toggleDir()">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-title">Dispensación</div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label">Vel. pastilla</span>
+          <div class="ctrl-right">
+            <button class="nudge" onclick="adjPillSpd(-0.5)">−</button>
+            <input type="range" id="pillSpdRange" min="0.5" max="5" step="0.5" value="2"
+              oninput="setPillSpd(parseFloat(this.value))">
+            <button class="nudge" onclick="adjPillSpd(+0.5)">+</button>
+            <span class="ctrl-val" id="pillSpdVal">2.0</span>
+            <span class="ctrl-unit">x</span>
+          </div>
+        </div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tamaño</span>
+          <div class="ctrl-right">
+            <button class="nudge" onclick="adjPillSize(-1)">−</button>
+            <input type="range" id="pillSzRange" min="4" max="14" step="1" value="8"
+              oninput="setPillSize(parseInt(this.value))">
+            <button class="nudge" onclick="adjPillSize(+1)">+</button>
+            <span class="ctrl-val" id="pillSzVal">8</span>
+            <span class="ctrl-unit">px</span>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Auto-stop tras dispensar</span>
+          <div class="toggle-track on" id="autoStopToggle" onclick="toggleAutoStop()">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-title">Sistema</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn act" id="mainRunBtn" onclick="toggleRun()" style="flex:1;padding:10px;font-size:13px;">▶ INICIAR</button>
+          <button class="btn stop" onclick="stopAll()" style="flex:1;padding:10px;font-size:13px;">■ DETENER</button>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn disp" onclick="openDispModal()" style="width:100%;padding:11px;font-size:14px;">💊 DISPENSAR MEDICAMENTO</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button class="btn" onclick="toggleDir()" style="flex:1;padding:8px;font-size:12px;" id="dirBtnSide">↻ CW</button>
+          <button class="btn" onclick="openInterior()" style="flex:1;padding:8px;font-size:12px;">🔍 Interior</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: STATUS -->
+    <div class="stab-panel" id="panel1">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Estado</div>
+          <div class="stat-card-val" id="statStatus" style="font-size:18px;color:var(--text2)">LISTO</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">RPM actual</div>
+          <div class="stat-card-val" id="statRPM" style="color:var(--gold2)">0</div>
+          <div class="stat-card-unit">RPM</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Torque</div>
+          <div class="stat-card-val" id="statTorque" style="color:var(--teal)">60</div>
+          <div class="stat-card-unit">%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Dispensados</div>
+          <div class="stat-card-val" id="statDisp" style="color:var(--green)">0</div>
+          <div class="stat-card-unit">unidades</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Temperatura</div>
+          <div class="stat-card-val" id="statTemp" style="color:var(--orange);font-size:20px">24.0°C</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Ciclos</div>
+          <div class="stat-card-val" id="statCycles" style="color:var(--purple)">0</div>
+        </div>
+      </div>
+      <div class="hbar-wrap">
+        <div style="font-size:13px;letter-spacing:.09em;color:var(--text2);text-transform:uppercase;margin-bottom:14px;font-weight:700;">Nivel Tolvas</div>
+        <div id="hopperBars"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: TRAZABILIDAD -->
+    <div class="stab-panel" id="panel2">
+      <div class="log-wrap" id="logWrap">
+        <div class="log-stitle">📋 Registro de Dispensaciones</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── MEDS ──
+const MEDS=[
+  {id:0,name:'ASPIRINA',sub:'500mg',color:'#e63946',bg:'rgba(230,57,70,.13)',border:'#e63946',icon:'🔴',hc:'#e63946'},
+  {id:1,name:'IBUPROFENO',sub:'400mg',color:'#4361ee',bg:'rgba(67,97,238,.13)',border:'#4361ee',icon:'🔵',hc:'#4361ee'},
+  {id:2,name:'PARACETAMOL',sub:'1g',color:'#2dc653',bg:'rgba(45,198,83,.13)',border:'#2dc653',icon:'🟢',hc:'#2dc653'},
+];
+
+// ── STATE ──
+let running=false, direction=1;
+let rpm=72, torque=60, accel=5, pillSpd=2.0, pillSize=8;
+let autoStop=true;
+let angle=0, rotorAngle=0, chainOffset=0;
+let dispensedCount=0, cycles=0, frameCount=0, interiorView=0;
+let hoppers=[85,72,61];
+let selectedMed=null;
+let pills=[], trayPills=[], handState=null;
+
+// derived speed from rpm
+function getSpeed(){ return rpm/72; }
+
+// ── CANVAS ──
+const mc=document.getElementById('main'), mCtx=mc.getContext('2d');
+const ic=document.getElementById('interior'), iCtx=ic.getContext('2d');
+
+let G={};
+function computeGeo(){
+  const W=mc.width, H=mc.height;
+  // BIG machine — use 78% of canvas width
+  const FW=Math.min(W*0.78, 820);
+  const FH=Math.min(H*0.88, 580);
+  const FX=(W*0.46)-FW/2; // shift left a bit to center in non-sidebar area
+  const FY=(H-FH)/2;
+  // Hopper
+  const HW=Math.round(FW*0.155), HH=Math.round(FH*0.24);
+  const hxs=[FX+FW*.07, FX+FW*.37, FX+FW*.67];
+  // Ramp
+  const RX1=FX+FW*.92, RY1=FY+FH*.21;
+  const RX2=FX+FW*.10, RY2=FY+FH*.52;
+  // Square container
+  const SQW=Math.round(FW*0.30), SQH=Math.round(FH*0.36);
+  const SQX=FX+FW*.04, SQY=FY+FH*.50;
+  const GCX=SQX+SQW/2, GCY=SQY+SQH/2;
+  // Chute below container
+  const CTOPY=SQY+SQH, CBOTY=CTOPY+Math.round(FH*.13);
+  const CTX=GCX, CBX=GCX;
+  // Tray
+  const TRX=SQX+FW*.01, TRY=CBOTY, TRW=SQW-FW*.02, TRH=Math.round(FH*.085);
+  // Shaft
+  const SHAFY=SQY+SQH*.5;
+  // Rotor
+  const ROT_X=FX+FW*.82, ROT_Y=FY+FH*.76;
+  const ROT_R=Math.round(FW*.075);
+  // Sprockets
+  const SP1X=SQX+SQW-FW*.01, SP1Y=SHAFY;
+  const SP2X=ROT_X, SP2Y=ROT_Y;
+  G={W,H,FW,FH,FX,FY,HW,HH,hxs,
+     RX1,RY1,RX2,RY2,
+     SQX,SQY,SQW,SQH,GCX,GCY,
+     CTOPY,CBOTY,CTX,CBX,
+     TRX,TRY,TRW,TRH,
+     SHAFY,ROT_X,ROT_Y,ROT_R,SP1X,SP1Y,SP2X,SP2Y};
+}
+function resize(){
+  const a=document.querySelector('.canvas-area');
+  mc.width=a.clientWidth; mc.height=a.clientHeight;
+  computeGeo();
+  ic.width=ic.offsetWidth||520; ic.height=340;
+}
+window.addEventListener('resize',resize); resize();
+
+// ── TABS ──
+function showTab(i){
+  for(let j=0;j<3;j++){
+    document.getElementById('tab'+j).className=j===i?'stab act':'stab';
+    document.getElementById('panel'+j).className=j===i?'stab-panel act':'stab-panel';
+  }
+}
+
+// ── HOPPER BARS ──
+function buildHopperUI(){
+  const el=document.getElementById('hopperBars'); el.innerHTML='';
+  MEDS.forEach((m,i)=>{
+    el.innerHTML+=`<div class="hbar">
+      <div class="hlabel"><span class="hname" style="color:${m.color}">${m.icon} ${m.name}</span><span id="hv${i}" style="font-size:14px;font-weight:700">${Math.round(hoppers[i])}%</span></div>
+      <div class="btrack"><div class="bfill" id="hb${i}" style="width:${hoppers[i]}%;background:${m.hc}"></div></div>
+    </div>`;
+  });
+}
+buildHopperUI();
+function updateHopperBars(){
+  MEDS.forEach((_,i)=>{
+    const b=document.getElementById('hb'+i),v=document.getElementById('hv'+i);
+    if(b)b.style.width=Math.round(hoppers[i])+'%';
+    if(v)v.textContent=Math.round(hoppers[i])+'%';
+  });
+}
+
+// ── LOG ──
+function log(msg,color='#58a6ff',detail=''){
+  const wrap=document.getElementById('logWrap');
+  const now=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el=document.createElement('div'); el.className='log-entry';
+  el.innerHTML=`<div class="log-ts">[${now}]</div>
+    <div class="log-med" style="color:${color}">${msg}</div>
+    ${detail?`<div class="log-detail">${detail}</div>`:''}`;
+  wrap.appendChild(el); wrap.scrollTop=wrap.scrollHeight;
+  while(wrap.children.length>60) wrap.removeChild(wrap.children[1]);
+}
+
+// ── PARAM CONTROLS ──
+function syncRPMUI(){
+  document.getElementById('rpmRange').value=rpm;
+  document.getElementById('rpmVal').textContent=rpm;
+  document.getElementById('statRPM').textContent=rpm;
+  document.getElementById('rpmD').textContent=rpm;
+}
+function setRPM(v){ rpm=Math.max(10,Math.min(300,v)); syncRPMUI(); }
+function adjRPM(d){ setRPM(rpm+d); log(`RPM → ${rpm}`,'#f0c040'); }
+
+function syncTorqUI(){
+  document.getElementById('torqRange').value=torque;
+  document.getElementById('torqVal').textContent=torque;
+  document.getElementById('statTorque').textContent=torque;
+}
+function setTorque(v){ torque=Math.max(5,Math.min(100,v)); syncTorqUI(); }
+function adjTorque(d){ setTorque(torque+d); log(`Torque → ${torque}%`,'#39d5c5'); }
+
+function syncAccelUI(){
+  document.getElementById('accelRange').value=accel;
+  document.getElementById('accelVal').textContent=accel;
+}
+function setAccel(v){ accel=Math.max(1,Math.min(10,v)); syncAccelUI(); }
+function adjAccel(d){ setAccel(accel+d); log(`Aceleración → ${accel}/10`,'#bc8cff'); }
+
+function syncPillSpdUI(){
+  document.getElementById('pillSpdRange').value=pillSpd;
+  document.getElementById('pillSpdVal').textContent=pillSpd.toFixed(1);
+}
+function setPillSpd(v){ pillSpd=Math.max(0.5,Math.min(5,v)); syncPillSpdUI(); }
+function adjPillSpd(d){ setPillSpd(Math.round((pillSpd+d)*10)/10); log(`Vel. pastilla → ${pillSpd}x`,'#f0883e'); }
+
+function syncPillSzUI(){
+  document.getElementById('pillSzRange').value=pillSize;
+  document.getElementById('pillSzVal').textContent=pillSize;
+}
+function setPillSize(v){ pillSize=Math.max(4,Math.min(14,v)); syncPillSzUI(); }
+function adjPillSize(d){ setPillSize(pillSize+d); log(`Tamaño pastilla → ${pillSize}px`,'#e63946'); }
+
+function toggleAutoStop(){
+  autoStop=!autoStop;
+  const t=document.getElementById('autoStopToggle');
+  t.classList.toggle('on',autoStop);
+  log(`Auto-stop → ${autoStop?'ON':'OFF'}`);
+}
+
+// ── MAIN CONTROLS ──
+function setRunningUI(r){
+  running=r;
+  ['btnRun','mainRunBtn'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){b.textContent=r?'⏸ PAUSAR':'▶ INICIAR'; b.className=r?'btn act':'btn';}
+  });
+  const st=document.getElementById('statStatus');
+  if(st){st.textContent=r?'ACTIVO':'PARADO'; st.style.color=r?'var(--green)':'var(--red)';}
+  if(document.getElementById('sysS')) document.getElementById('sysS').textContent=r?'ACTIVO':'PARADO';
+}
+function toggleRun(){
+  setRunningUI(!running);
+  log(running?'Sistema iniciado':'Sistema pausado', running?'#3fb950':'#f0883e');
+}
+function stopAll(){
+  setRunningUI(false); pills=[]; trayPills=[]; handState=null;
+  log('Sistema detenido','#f85149');
+}
+function toggleDir(){
+  direction*=-1;
+  const lbl=direction===1?'↻ CW':'↺ CCW';
+  document.getElementById('dirBtnSide').textContent=lbl;
+  document.getElementById('dirD').textContent=direction===1?'CW':'CCW';
+  const t=document.getElementById('dirToggle');
+  if(t) t.classList.toggle('on',direction===-1);
+  log(`Dirección → ${direction===1?'Horario':'Antihorario'}`,'#bc8cff');
+}
+
+// ── MODAL ──
+function openDispModal(){
+  selectedMed=null;
+  const grid=document.getElementById('medGrid'); grid.innerHTML='';
+  MEDS.forEach((m,i)=>{
+    const empty=hoppers[i]<5;
+    grid.innerHTML+=`<div class="med-card" id="mc${i}"
+      style="border-color:${empty?'#444':m.border};opacity:${empty?.45:1};background:${m.bg}"
+      onclick="${empty?'':'selectMed('+i+')'}">
+      <div class="med-icon">${m.icon}</div>
+      <div class="med-name" style="color:${m.color}">${m.name}</div>
+      <div class="med-sub">${m.sub}</div>
+      <div class="med-lvl-bar"><div class="med-lvl-fill" style="width:${hoppers[i]}%;background:${m.hc}"></div></div>
+      <div style="font-size:11px;margin-top:5px;color:${empty?'var(--red)':'var(--text2)'};">${empty?'VACÍO':Math.round(hoppers[i])+'%'}</div>
+    </div>`;
+  });
+  document.getElementById('confirmBtn').disabled=true;
+  document.getElementById('confirmBtn').textContent='SELECCIONA UN MEDICAMENTO';
+  document.getElementById('dispModal').classList.add('open');
+}
+function selectMed(i){
+  selectedMed=MEDS[i];
+  MEDS.forEach((_,j)=>{ const c=document.getElementById('mc'+j); if(c) c.style.outline=j===i?`3px solid ${MEDS[i].color}`:'none'; });
+  const btn=document.getElementById('confirmBtn');
+  btn.disabled=false;
+  btn.textContent=`✓ DISPENSAR ${MEDS[i].name}`;
+  btn.style.borderColor=MEDS[i].color; btn.style.color=MEDS[i].color;
+}
+function closeDispModal(){ document.getElementById('dispModal').classList.remove('open'); selectedMed=null; }
+function confirmDispense(){
+  if(!selectedMed) return;
+  const med=selectedMed; closeDispModal();
+  if(!running){ setRunningUI(true); log('Sistema iniciado automáticamente','#3fb950'); }
+  doDispense(med);
+}
+function showToast(msg,color='var(--green)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.borderColor=color; t.style.color=color;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── DISPENSE ──
+function doDispense(med){
+  dispensedCount++;
+  hoppers[med.id]=Math.max(0,hoppers[med.id]-7);
+  updateHopperBars();
+  document.getElementById('statDisp').textContent=dispensedCount;
+  document.getElementById('tracTotal').textContent=dispensedCount;
+  document.getElementById('tracLast').textContent=med.name;
+  showTab(2); // switch to log tab
+  const now=new Date();
+  log(`💊 ${med.icon} ${med.name}`, med.color,
+    `Dosis: ${med.sub} · ${now.toLocaleDateString('es')} ${now.toLocaleTimeString('es')}\nTolva: ${Math.round(hoppers[med.id])}% restante · RPM: ${rpm} · Torque: ${torque}%`);
+  showToast(`✓ ${med.name} dispensado`, med.color);
+  // Spawn single pill
+  pills.push({
+    med, color:med.color, size:pillSize,
+    stage:'fall', t:0, speed:0.022*pillSpd,
+    x:G.hxs[med.id]+G.HW/2, y:G.FY-G.HH,
+    startX:G.hxs[med.id]+G.HW/2, startY:G.FY-G.HH,
+    spinAngle:Math.atan2(G.RY2-G.GCY, G.RX2-G.GCX),
+    spinR:Math.hypot(G.RX2-G.GCX, G.RY2-G.GCY)*0.68,
+    landed:false
+  });
+}
+
+// ── PILL STATE MACHINE ──
+function eio(t){ return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function updatePills(){
+  const s=getSpeed();
+  pills.forEach(p=>{
+    if(!running) return;
+    p.t += p.speed * s;
+    if(p.t>1) p.t=1;
+    const e=eio(p.t);
+
+    if(p.stage==='fall'){
+      // straight drop from hopper to ramp start
+      p.x=lerp(p.startX, G.RX1, e);
+      p.y=lerp(p.startY, G.RY1, e);
+      if(p.t>=1){ p.stage='ramp'; p.t=0; p.speed=0.016*pillSpd; }
+
+    } else if(p.stage==='ramp'){
+      // slide left down ramp
+      p.x=lerp(G.RX1, G.RX2, e);
+      p.y=lerp(G.RY1, G.RY2, e);
+      if(p.t>=1){ p.stage='spin'; p.t=0; p.speed=0.006*pillSpd; }
+
+    } else if(p.stage==='spin'){
+      // orbit around gear center ~270°
+      const totalArc=Math.PI*1.6*direction;
+      const a=p.spinAngle + totalArc*e;
+      const r=p.spinR*(1-e*0.45);
+      p.x=G.GCX+Math.cos(a)*r;
+      p.y=G.GCY+Math.sin(a)*r;
+      if(p.t>=1){ p.stage='chute'; p.t=0; p.speed=0.030*pillSpd; p.startX=p.x; p.startY=p.y; }
+
+    } else if(p.stage==='chute'){
+      // fall straight down
+      p.x=lerp(p.startX, G.CBX, e);
+      p.y=lerp(p.startY, G.TRY+G.TRH*0.42, e);
+      if(p.t>=1){
+        p.stage='land';
+        trayPills.push({x:G.TRX+22+Math.random()*(G.TRW-44), y:G.TRY+G.TRH*.44, color:p.color, size:p.size, opacity:1, med:p.med});
+        if(!handState && trayPills.length>0){
+          const tp=trayPills[trayPills.length-1];
+          handState={x:tp.x+120, y:tp.y-24, phase:'approach', t:0, pillIdx:trayPills.length-1, color:p.color, targetX:tp.x, targetY:tp.y};
+        }
+        if(autoStop){ setRunningUI(false); log('Auto-stop tras dispensar','#8b949e'); }
+      }
+    }
+  });
+  pills=pills.filter(p=>p.stage!=='land');
+}
+
+function updateHand(){
+  if(!handState) return;
+  if(pills.length>0 && handState.phase==='approach') return;
+  const h=handState;
+  if(h.phase==='approach'){
+    h.x=lerp(h.x, h.targetX, 0.055);
+    h.y=lerp(h.y, h.targetY-20, 0.055);
+    if(Math.abs(h.x-h.targetX)<4){ h.phase='grab'; h.t=0; }
+  } else if(h.phase==='grab'){
+    h.t+=0.02;
+    if(h.t>0.5 && trayPills[h.pillIdx]) trayPills[h.pillIdx].opacity=Math.max(0,1-(h.t-0.5)*5);
+    if(h.t>=1){ h.phase='retreat'; }
+  } else {
+    h.x+=4.5; h.y-=1.5;
+    if(h.x>G.W+80){ handState=null; trayPills=trayPills.filter(p=>p.opacity>0.05); }
+  }
+}
+
+// ── HELPERS ──
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+function drawGear(ctx,cx,cy,r,teeth,ang,c1,c2,c3,spin){
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(spin?ang:0);
+  ctx.beginPath();
+  for(let i=0;i<teeth;i++){
+    const a0=i/teeth*Math.PI*2,a1=(i+.4)/teeth*Math.PI*2,a2=(i+.6)/teeth*Math.PI*2,a3=(i+1)/teeth*Math.PI*2;
+    const ti=r*1.25,ri=r*.84;
+    if(i===0)ctx.moveTo(Math.cos(a0)*ri,Math.sin(a0)*ri);
+    ctx.lineTo(Math.cos(a0)*ri,Math.sin(a0)*ri);
+    ctx.lineTo(Math.cos(a1)*ti,Math.sin(a1)*ti);
+    ctx.lineTo(Math.cos(a2)*ti,Math.sin(a2)*ti);
+    ctx.lineTo(Math.cos(a3)*ri,Math.sin(a3)*ri);
+  }
+  ctx.closePath();ctx.fillStyle=c2;ctx.fill();ctx.strokeStyle=c1;ctx.lineWidth=1.8;ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,r*.6,0,Math.PI*2);
+  const gg=ctx.createRadialGradient(0,0,0,0,0,r*.6);
+  gg.addColorStop(0,c3);gg.addColorStop(1,c2);
+  ctx.fillStyle=gg;ctx.fill();ctx.strokeStyle=c1+'99';ctx.lineWidth=1;ctx.stroke();
+  for(let i=0;i<4;i++){const sa=i*Math.PI/2;ctx.beginPath();ctx.arc(Math.cos(sa)*r*.34,Math.sin(sa)*r*.34,r*.09,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.55)';ctx.fill();}
+  ctx.beginPath();ctx.arc(0,0,r*.08,0,Math.PI*2);ctx.fillStyle=c3;ctx.fill();
+  ctx.restore();
+}
+
+function drawRotor(ctx,cx,cy,r,ang,spin){
+  ctx.save();ctx.translate(cx,cy);
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);
+  const rg=ctx.createRadialGradient(0,0,r*.3,0,0,r);
+  rg.addColorStop(0,'#2a4a7a');rg.addColorStop(1,'#0d1a2c');
+  ctx.fillStyle=rg;ctx.fill();ctx.strokeStyle='#4a7ab0';ctx.lineWidth=3;ctx.stroke();
+  ctx.rotate(spin?ang:0);
+  for(let i=0;i<6;i++){
+    ctx.save();ctx.rotate(i*Math.PI*2/6);
+    ctx.beginPath();ctx.moveTo(0,0);
+    ctx.bezierCurveTo(r*.2,-r*.15,r*.72,-r*.26,r*.93,-r*.05);
+    ctx.bezierCurveTo(r*.72,r*.2,r*.3,r*.18,0,0);
+    ctx.closePath();
+    const bg=ctx.createLinearGradient(0,0,r*.93,0);
+    bg.addColorStop(0,'#3a6cbf');bg.addColorStop(1,'#6aacf0');
+    ctx.fillStyle=bg;ctx.fill();ctx.strokeStyle='#2a4c90';ctx.lineWidth=.6;ctx.stroke();
+    ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(0,0,r*.2,0,Math.PI*2);ctx.fillStyle='#8b9ab0';ctx.fill();ctx.strokeStyle='#aac0e0';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,r*.09,0,Math.PI*2);ctx.fillStyle='#c9d1d9';ctx.fill();
+  ctx.restore();
+}
+
+function drawChain(ctx,x1,y1,r1,x2,y2,r2,off,spin,dir){
+  const dist=Math.hypot(x2-x1,y2-y1);
+  if(dist<r1+r2+2) return;
+  const ang=Math.atan2(y2-y1,x2-x1);
+  const ratio=(r2-r1)/dist;
+  if(Math.abs(ratio)>0.99) return;
+  const alpha=Math.asin(ratio);
+  const tx1=x1+r1*Math.cos(ang-Math.PI/2+alpha),ty1=y1+r1*Math.sin(ang-Math.PI/2+alpha);
+  const tx2=x2+r2*Math.cos(ang-Math.PI/2+alpha),ty2=y2+r2*Math.sin(ang-Math.PI/2+alpha);
+  const bx1=x1+r1*Math.cos(ang+Math.PI/2-alpha),by1=y1+r1*Math.sin(ang+Math.PI/2-alpha);
+  const bx2=x2+r2*Math.cos(ang+Math.PI/2-alpha),by2=y2+r2*Math.sin(ang+Math.PI/2-alpha);
+  ctx.save();
+  ctx.strokeStyle='rgba(180,140,20,.2)';ctx.lineWidth=11;
+  ctx.beginPath();ctx.moveTo(tx1,ty1);ctx.lineTo(tx2,ty2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx1,by1);ctx.lineTo(bx2,by2);ctx.stroke();
+  ctx.strokeStyle='#9a7828';ctx.lineWidth=7;
+  ctx.beginPath();ctx.moveTo(tx1,ty1);ctx.lineTo(tx2,ty2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx1,by1);ctx.lineTo(bx2,by2);ctx.stroke();
+  ctx.strokeStyle='#f0c060';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(tx1,ty1);ctx.lineTo(tx2,ty2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx1,by1);ctx.lineTo(bx2,by2);ctx.stroke();
+  if(spin){
+    const tl=Math.hypot(tx2-tx1,ty2-ty1)||1, bl=Math.hypot(bx2-bx1,by2-by1)||1;
+    const lk=14;
+    ctx.fillStyle='#d4a017';
+    for(let i=0;i<Math.ceil(tl/lk)+3;i++){
+      const t=((i*lk+off*dir*3%tl+tl*8)%tl)/tl;
+      if(t<0||t>1)continue;
+      ctx.beginPath();ctx.arc(tx1+(tx2-tx1)*t,ty1+(ty2-ty1)*t,4.5,0,Math.PI*2);ctx.fill();
+    }
+    for(let i=0;i<Math.ceil(bl/lk)+3;i++){
+      const t=((i*lk+off*dir*3%bl+bl*8)%bl)/bl;
+      if(t<0||t>1)continue;
+      ctx.beginPath();ctx.arc(bx2+(bx1-bx2)*t,by2+(by1-by2)*t,4.5,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawPill(ctx,x,y,r,color){
+  ctx.save();ctx.translate(x,y);
+  const len=r*1.9;
+  ctx.fillStyle='rgba(0,0,0,.3)';
+  ctx.beginPath();ctx.ellipse(2,3,len/2+1,r+1,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,0,len/2,r,0,0,Math.PI*2);
+  const pg=ctx.createRadialGradient(-r*.3,-r*.3,0,0,0,len);
+  pg.addColorStop(0,'rgba(255,255,255,.4)');pg.addColorStop(.3,color);pg.addColorStop(1,color+'88');
+  ctx.fillStyle=pg;ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke();
+  ctx.beginPath();ctx.ellipse(-len*.18,-r*.32,len*.18,r*.22,-0.3,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,.45)';ctx.fill();
+  ctx.restore();
+}
+
+function drawHand(ctx,h){
+  if(!h) return;
+  const {x,y,phase,color}=h;
+  ctx.save();
+  ctx.fillStyle='#f5c5a3';
+  ctx.beginPath();ctx.ellipse(x,y+14,16,12,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#c09070';ctx.lineWidth=.8;ctx.stroke();
+  [[-11,-1],[-4,-4],[3,-4],[10,-1]].forEach(([dx,dy])=>{
+    ctx.fillStyle='#f5c5a3';
+    ctx.beginPath();ctx.ellipse(x+dx,y+dy,5,10,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#c09070';ctx.lineWidth=.7;ctx.stroke();
+  });
+  ctx.fillStyle='#f5c5a3';
+  ctx.beginPath();ctx.ellipse(x-18,y+12,7,5,-.35,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#c09070';ctx.lineWidth=.7;ctx.stroke();
+  if(phase==='grab'){
+    ctx.strokeStyle=color;ctx.lineWidth=3;ctx.globalAlpha=.7;
+    ctx.beginPath();ctx.arc(x,y+8,22,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=color+'22';ctx.fill();ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+
+// ── MAIN DRAW ──
+let tempTick=0;
+function drawMain(){
+  const {W,H,FW,FH,FX,FY,HW,HH,hxs,
+         RX1,RY1,RX2,RY2,
+         SQX,SQY,SQW,SQH,GCX,GCY,
+         CTOPY,CBOTY,CTX,CBX,
+         TRX,TRY,TRW,TRH,
+         SHAFY,ROT_X,ROT_Y,ROT_R,SP1X,SP1Y,SP2X,SP2Y}=G;
+
+  mCtx.clearRect(0,0,W,H);
+  mCtx.fillStyle='#0d1117';mCtx.fillRect(0,0,W,H);
+
+  // Grid
+  mCtx.strokeStyle='rgba(48,54,61,.3)';mCtx.lineWidth=.5;
+  for(let x=0;x<W;x+=44){mCtx.beginPath();mCtx.moveTo(x,0);mCtx.lineTo(x,H);mCtx.stroke();}
+  for(let y=0;y<H;y+=44){mCtx.beginPath();mCtx.moveTo(0,y);mCtx.lineTo(W,y);mCtx.stroke();}
+
+  // ── FRAME ──
+  mCtx.fillStyle='rgba(0,0,0,.42)';rr(mCtx,FX+7,FY+7,FW,FH,14);mCtx.fill();
+  const fg=mCtx.createLinearGradient(FX,FY,FX+FW,FY+FH);
+  fg.addColorStop(0,'#1e2535');fg.addColorStop(1,'#131b26');
+  mCtx.fillStyle=fg;rr(mCtx,FX,FY,FW,FH,14);mCtx.fill();
+  mCtx.strokeStyle='#2e3d54';mCtx.lineWidth=3;rr(mCtx,FX,FY,FW,FH,14);mCtx.stroke();
+  if(running){mCtx.strokeStyle='rgba(88,166,255,.12)';mCtx.lineWidth=5;rr(mCtx,FX+5,FY+5,FW-10,FH-10,12);mCtx.stroke();}
+  mCtx.strokeStyle='rgba(88,166,255,.1)';mCtx.lineWidth=1;
+  mCtx.beginPath();mCtx.moveTo(FX+18,FY+2);mCtx.lineTo(FX+FW-18,FY+2);mCtx.stroke();
+
+  // ── HOPPERS ──
+  const hCols=[['#c0392b','#e74c3c','#ff8c8c'],['#1a237e','#3949ab','#6c7fd0'],['#1b5e20','#388e3c','#6ecc78']];
+  hxs.forEach((hx,i)=>{
+    const topY=FY-HH, botY=FY;
+    const bx1=hx+HW*.26, bx2=hx+HW*.74;
+    mCtx.fillStyle='rgba(0,0,0,.4)';
+    mCtx.beginPath();mCtx.moveTo(hx+4,topY+4);mCtx.lineTo(hx+HW+4,topY+4);mCtx.lineTo(bx2+4,botY+4);mCtx.lineTo(bx1+4,botY+4);mCtx.closePath();mCtx.fill();
+    const hg=mCtx.createLinearGradient(hx,topY,hx+HW,botY);
+    hg.addColorStop(0,hCols[i][2]);hg.addColorStop(.5,hCols[i][1]);hg.addColorStop(1,hCols[i][0]);
+    mCtx.fillStyle=hg;
+    mCtx.beginPath();mCtx.moveTo(hx,topY);mCtx.lineTo(hx+HW,topY);mCtx.lineTo(bx2,botY);mCtx.lineTo(bx1,botY);mCtx.closePath();mCtx.fill();
+    mCtx.strokeStyle=hCols[i][0];mCtx.lineWidth=2;mCtx.stroke();
+    mCtx.fillStyle=hCols[i][2];
+    mCtx.beginPath();mCtx.ellipse(hx+HW/2,topY,HW/2,HH*.07,0,0,Math.PI*2);mCtx.fill();
+    mCtx.strokeStyle='rgba(255,255,255,.5)';mCtx.lineWidth=1;mCtx.stroke();
+    // fill level
+    const lvl=hoppers[i]/100, fH=HH*lvl;
+    mCtx.save();
+    mCtx.beginPath();mCtx.moveTo(hx,topY);mCtx.lineTo(hx+HW,topY);mCtx.lineTo(bx2,botY);mCtx.lineTo(bx1,botY);mCtx.closePath();mCtx.clip();
+    mCtx.fillStyle=hCols[i][1]+'66';mCtx.fillRect(hx,botY-fH,HW,fH);
+    mCtx.restore();
+    // labels
+    mCtx.fillStyle='#fff';mCtx.font=`bold ${Math.round(HH*.16)}px Courier New`;mCtx.textAlign='center';
+    mCtx.fillText(['A','B','C'][i],hx+HW/2,topY+HH*.5);
+    mCtx.fillStyle=hCols[i][2];mCtx.font=`${Math.round(HH*.13)}px Courier New`;
+    mCtx.fillText(Math.round(hoppers[i])+'%',hx+HW/2,topY+HH*.66);
+    mCtx.fillStyle=hCols[i][2];mCtx.font='11px Courier New';
+    mCtx.fillText(MEDS[i].name,hx+HW/2,FY+14);
+  });
+
+  // ── RAMP ──
+  const rang=Math.atan2(RY2-RY1,RX2-RX1);
+  const thick=Math.round(FH*.034);
+  const nx=Math.sin(rang)*thick, ny=-Math.cos(rang)*thick;
+  mCtx.fillStyle='rgba(0,0,0,.35)';
+  mCtx.beginPath();mCtx.moveTo(RX1+5,RY1+5);mCtx.lineTo(RX2+5,RY2+5);mCtx.lineTo(RX2+nx+5,RY2+ny+5);mCtx.lineTo(RX1+nx+5,RY1+ny+5);mCtx.closePath();mCtx.fill();
+  const rmpg=mCtx.createLinearGradient(RX1,RY1,RX2,RY2);
+  rmpg.addColorStop(0,'#2e3d58');rmpg.addColorStop(1,'#1c2838');
+  mCtx.fillStyle=rmpg;
+  mCtx.beginPath();mCtx.moveTo(RX1,RY1);mCtx.lineTo(RX2,RY2);mCtx.lineTo(RX2+nx,RY2+ny);mCtx.lineTo(RX1+nx,RY1+ny);mCtx.closePath();mCtx.fill();
+  mCtx.strokeStyle='rgba(88,166,255,.4)';mCtx.lineWidth=2;
+  mCtx.beginPath();mCtx.moveTo(RX1,RY1);mCtx.lineTo(RX2,RY2);mCtx.stroke();
+  mCtx.strokeStyle='rgba(255,255,255,.07)';mCtx.lineWidth=1;
+  mCtx.beginPath();mCtx.moveTo(RX1+nx,RY1+ny);mCtx.lineTo(RX2+nx,RY2+ny);mCtx.stroke();
+  mCtx.save();
+  mCtx.translate((RX1+RX2)/2+10,(RY1+RY2)/2-20);mCtx.rotate(rang);
+  mCtx.fillStyle='rgba(88,166,255,.55)';mCtx.font='12px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('RAMPA INCLINADA →',0,0);mCtx.restore();
+
+  // ── SQUARE CONTAINER ──
+  const mainGR=Math.round(SQW*.28), spGR=Math.round(SQW*.17);
+  mCtx.fillStyle='rgba(0,0,0,.42)';rr(mCtx,SQX+6,SQY+6,SQW,SQH,10);mCtx.fill();
+  const sqg=mCtx.createLinearGradient(SQX,SQY,SQX+SQW,SQY+SQH);
+  sqg.addColorStop(0,'#1c2840');sqg.addColorStop(1,'#131a2e');
+  mCtx.fillStyle=sqg;rr(mCtx,SQX,SQY,SQW,SQH,10);mCtx.fill();
+  mCtx.strokeStyle='#3a4d70';mCtx.lineWidth=3;rr(mCtx,SQX,SQY,SQW,SQH,10);mCtx.stroke();
+  if(running){mCtx.strokeStyle='rgba(88,166,255,.22)';mCtx.lineWidth=3;rr(mCtx,SQX+5,SQY+5,SQW-10,SQH-10,8);mCtx.stroke();}
+  mCtx.fillStyle='rgba(88,166,255,.55)';mCtx.font='bold 13px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('MECANISMO ROTATORIO',SQX+SQW/2,SQY-16);
+  mCtx.fillStyle='rgba(88,166,255,.3)';mCtx.font='10px Courier New';
+  mCtx.fillText('CONTENEDOR',SQX+SQW/2,SQY-4);
+
+  // Gears
+  drawGear(mCtx,GCX,GCY,mainGR,20,angle,'#4a7ab0','#2a4a80','#6a9ad0',running);
+  drawGear(mCtx,GCX,GCY,spGR,12,angle*1.4,'#d4a017','#8b6800','#f0c040',running);
+  mCtx.fillStyle='#8b9ab0';mCtx.beginPath();mCtx.arc(GCX,GCY,mainGR*.13,0,Math.PI*2);mCtx.fill();
+  mCtx.strokeStyle='#aac0e0';mCtx.lineWidth=1.5;mCtx.stroke();
+
+  // ── SHAFT ──
+  const shGrad=mCtx.createLinearGradient(SQX+SQW,SHAFY-6,ROT_X,SHAFY+6);
+  shGrad.addColorStop(0,'#8b949e');shGrad.addColorStop(.5,'#c9d1d9');shGrad.addColorStop(1,'#8b949e');
+  mCtx.fillStyle=shGrad;mCtx.fillRect(SQX+SQW,SHAFY-6,ROT_X-SQX-SQW,12);
+  mCtx.strokeStyle='#555';mCtx.lineWidth=.8;mCtx.strokeRect(SQX+SQW,SHAFY-6,ROT_X-SQX-SQW,12);
+  mCtx.strokeStyle='rgba(0,0,0,.3)';mCtx.lineWidth=.6;
+  for(let sx=SQX+SQW+18;sx<ROT_X;sx+=18){mCtx.beginPath();mCtx.moveTo(sx,SHAFY-6);mCtx.lineTo(sx,SHAFY+6);mCtx.stroke();}
+  mCtx.fillStyle='rgba(212,175,100,.55)';mCtx.font='10px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('EJE DE TRANSMISIÓN',(SQX+SQW+ROT_X)/2,SHAFY-15);
+
+  // ── ROTOR HOUSING ──
+  const RHR=ROT_R+18;
+  mCtx.fillStyle='rgba(0,0,0,.5)';mCtx.beginPath();mCtx.arc(ROT_X+5,ROT_Y+5,RHR,0,Math.PI*2);mCtx.fill();
+  const rhg=mCtx.createRadialGradient(ROT_X-RHR*.25,ROT_Y-RHR*.25,0,ROT_X,ROT_Y,RHR);
+  rhg.addColorStop(0,'#1e2e40');rhg.addColorStop(1,'#0e1a28');
+  mCtx.fillStyle=rhg;mCtx.beginPath();mCtx.arc(ROT_X,ROT_Y,RHR,0,Math.PI*2);mCtx.fill();
+  mCtx.strokeStyle='#3a5c7a';mCtx.lineWidth=3;mCtx.stroke();
+  mCtx.strokeStyle='rgba(88,166,255,.12)';mCtx.lineWidth=2;
+  mCtx.beginPath();mCtx.arc(ROT_X,ROT_Y,RHR-5,0,Math.PI*2);mCtx.stroke();
+  mCtx.fillStyle='rgba(88,166,255,.7)';mCtx.font='bold 13px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('ROTOR',ROT_X,ROT_Y-RHR-12);
+  mCtx.fillStyle='rgba(88,166,255,.38)';mCtx.font='10px Courier New';
+  mCtx.fillText('PIEZA AUXILIAR',ROT_X,ROT_Y-RHR-1);
+  drawRotor(mCtx,ROT_X,ROT_Y,ROT_R,rotorAngle,running);
+
+  const currRPM=running?rpm:0;
+  mCtx.fillStyle=running?'rgba(240,192,64,.9)':'rgba(140,140,140,.45)';
+  mCtx.font='bold 12px Courier New';mCtx.textAlign='center';
+  mCtx.fillText(running?currRPM+' RPM':'EN ESPERA',ROT_X,ROT_Y+ROT_R+22);
+
+  // ── CHAIN ──
+  const CSP1R=Math.round(SQW*.12), CSP2R=Math.round(ROT_R*.58);
+  drawChain(mCtx,SP1X,SP1Y,CSP1R,SP2X,SP2Y,CSP2R,chainOffset,running,direction);
+  drawGear(mCtx,SP1X,SP1Y,CSP1R,12,angle*.85,'#d4a017','#8b6800','#f0c040',running);
+  drawGear(mCtx,SP2X,SP2Y,CSP2R,15,rotorAngle*.65,'#d4a017','#8b6800','#f0c040',running);
+  mCtx.fillStyle='rgba(212,160,23,.6)';mCtx.font='10px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('⛓ CADENA 65cm',(SP1X+SP2X)/2,(SP1Y+SP2Y)/2+34);
+
+  // ── CHUTE ──
+  const cw1=SQW*.76, cw2=SQW*.42;
+  const cx1=SQX+(SQW-cw1)/2, cx2=SQX+(SQW-cw2)/2;
+  mCtx.fillStyle='rgba(0,0,0,.35)';
+  mCtx.beginPath();mCtx.moveTo(cx1+4,CTOPY+4);mCtx.lineTo(cx1+cw1+4,CTOPY+4);mCtx.lineTo(cx2+cw2+4,CBOTY+4);mCtx.lineTo(cx2+4,CBOTY+4);mCtx.closePath();mCtx.fill();
+  mCtx.fillStyle='#182234';
+  mCtx.beginPath();mCtx.moveTo(cx1,CTOPY);mCtx.lineTo(cx1+cw1,CTOPY);mCtx.lineTo(cx2+cw2,CBOTY);mCtx.lineTo(cx2,CBOTY);mCtx.closePath();mCtx.fill();
+  mCtx.strokeStyle='#2e4060';mCtx.lineWidth=2;mCtx.stroke();
+  mCtx.strokeStyle='rgba(88,166,255,.14)';mCtx.lineWidth=1;
+  mCtx.beginPath();mCtx.moveTo(cx1,CTOPY);mCtx.lineTo(cx2,CBOTY);mCtx.stroke();
+  mCtx.beginPath();mCtx.moveTo(cx1+cw1,CTOPY);mCtx.lineTo(cx2+cw2,CBOTY);mCtx.stroke();
+
+  // ── TRAY ──
+  mCtx.fillStyle='rgba(0,0,0,.42)';rr(mCtx,TRX+5,TRY+5,TRW,TRH,10);mCtx.fill();
+  const tg=mCtx.createLinearGradient(TRX,TRY,TRX,TRY+TRH);
+  tg.addColorStop(0,'#1e2e44');tg.addColorStop(1,'#0d1624');
+  mCtx.fillStyle=tg;rr(mCtx,TRX,TRY,TRW,TRH,10);mCtx.fill();
+  mCtx.strokeStyle='#2e4464';mCtx.lineWidth=2.5;rr(mCtx,TRX,TRY,TRW,TRH,10);mCtx.stroke();
+  mCtx.strokeStyle='rgba(88,166,255,.1)';mCtx.lineWidth=1;rr(mCtx,TRX+5,TRY+5,TRW-10,TRH-10,8);mCtx.stroke();
+  mCtx.fillStyle='rgba(88,166,255,.4)';mCtx.font='bold 12px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('BANDEJA DE TOMA',TRX+TRW/2,TRY+TRH/2+4);
+
+  // Tray pills
+  trayPills.forEach(p=>{
+    if(!p||p.opacity<=0) return;
+    mCtx.globalAlpha=p.opacity;
+    drawPill(mCtx,p.x,p.y,p.size,p.color);
+    mCtx.globalAlpha=1;
+  });
+
+  // Flying pills
+  updatePills();
+  pills.forEach(p=>drawPill(mCtx,p.x,p.y,p.size,p.color));
+
+  // Hand
+  updateHand();
+  drawHand(mCtx,handState);
+
+  // ── LIVE STATS overlay ──
+  if(running){
+    tempTick++;
+    const t=(28+torque*.08+rpm*.02+Math.sin(tempTick*.015)*1.2).toFixed(1);
+    document.getElementById('statTemp').textContent=t+'°C';
+    document.getElementById('tempD').textContent=t+'°C';
+    document.getElementById('statRPM').textContent=rpm;
+    document.getElementById('rpmD').textContent=rpm;
+    document.getElementById('statCycles').textContent=cycles;
+    document.getElementById('cycD').textContent=cycles;
+    const r=document.getElementById('rpmS'); if(r)r.textContent=rpm;
+  }
+
+  // Hint
+  mCtx.fillStyle='rgba(88,166,255,.18)';mCtx.font='11px Courier New';mCtx.textAlign='center';
+  mCtx.fillText('Clic en Rotor o Mecanismo → Vista interior',G.W/2,G.H-10);
+}
+
+// ── INTERIOR ──
+function drawInterior(){
+  const W=ic.width||520,H=340;
+  iCtx.clearRect(0,0,W,H);iCtx.fillStyle='#0a0c14';iCtx.fillRect(0,0,W,H);
+  iCtx.strokeStyle='rgba(48,54,61,.22)';iCtx.lineWidth=.5;
+  for(let x=0;x<W;x+=28){iCtx.beginPath();iCtx.moveTo(x,0);iCtx.lineTo(x,H);iCtx.stroke();}
+  for(let y=0;y<H;y+=28){iCtx.beginPath();iCtx.moveTo(0,y);iCtx.lineTo(W,y);iCtx.stroke();}
+  const cx=W/2,cy=H/2;
+  if(interiorView===0) drawIGear(cx,cy,W,H);
+  else if(interiorView===1) drawIChain(cx,cy,W,H);
+  else drawIAxle(cx,cy,W,H);
+}
+function drawIGear(cx,cy,W,H){
+  iCtx.save();iCtx.shadowColor='#4a7ab0';iCtx.shadowBlur=30;
+  drawGear(iCtx,cx,cy,100,22,angle*2,'#4a7ab0','#2a4a80','#6a9ad0',running);iCtx.restore();
+  if(running){
+    iCtx.strokeStyle='rgba(240,192,64,.55)';iCtx.lineWidth=2.5;
+    iCtx.beginPath();iCtx.arc(cx,cy,118,-0.5,1.5,direction<0);iCtx.stroke();
+    const ax=cx+Math.cos(1.5)*118,ay=cy+Math.sin(1.5)*118;
+    iCtx.fillStyle='rgba(240,192,64,.8)';iCtx.beginPath();iCtx.arc(ax,ay,6,0,Math.PI*2);iCtx.fill();
+  }
+  [[cx+122,cy-22,'→ Dientes: 22'],[cx+122,cy+2,'→ Módulo: 2mm'],[cx+122,cy+26,'→ PCD: 200px'],
+   [cx-122,cy-22,'Núcleo ←'],[cx-122,cy+2,'Aleación ←'],[cx-122,cy+26,'Acero ←']].forEach(([x,y,t])=>{
+    iCtx.fillStyle=x>cx?'rgba(88,166,255,.75)':'rgba(212,160,23,.75)';
+    iCtx.font='11px Courier New';iCtx.textAlign=x>cx?'left':'right';iCtx.fillText(t,x,y);
+    iCtx.strokeStyle=x>cx?'rgba(88,166,255,.2)':'rgba(212,160,23,.2)';iCtx.lineWidth=.5;iCtx.setLineDash([3,4]);
+    iCtx.beginPath();iCtx.moveTo(x>cx?cx+102:cx-102,y-3);iCtx.lineTo(x>cx?x-5:x+5,y-3);iCtx.stroke();iCtx.setLineDash([]);
+  });
+  iCtx.fillStyle='rgba(88,166,255,.5)';iCtx.font='13px Courier New';iCtx.textAlign='center';
+  iCtx.fillText('VISTA INTERIOR — ENGRANAJE PRINCIPAL',cx,18);
+}
+function drawIChain(cx,cy,W,H){
+  iCtx.save();iCtx.shadowColor='#d4a017';iCtx.shadowBlur=18;
+  drawGear(iCtx,cx-150,cy,56,12,angle*1.2,'#d4a017','#8b6800','#f0c040',running);
+  drawGear(iCtx,cx+122,cy,74,16,angle*.86,'#d4a017','#8b6800','#f0c040',running);
+  iCtx.restore();
+  drawChain(iCtx,cx-150,cy,56,cx+122,cy,74,chainOffset,running,direction);
+  iCtx.fillStyle='rgba(212,160,23,.8)';iCtx.font='11px Courier New';iCtx.textAlign='center';
+  iCtx.fillText('Piñon Conducido',cx-150,cy+76);iCtx.fillText('Piñon Motor',cx+122,cy+94);
+  iCtx.fillStyle='rgba(200,200,200,.45)';iCtx.font='11px Courier New';
+  iCtx.fillText('CADENA 65cm — 52 ESLABONES — PASO 12.5mm',cx,H-14);
+  iCtx.fillStyle='rgba(88,166,255,.5)';iCtx.font='13px Courier New';
+  iCtx.fillText('VISTA INTERIOR — CADENA DE TRANSMISIÓN',cx,18);
+}
+function drawIAxle(cx,cy,W,H){
+  const ax1=cx-165,ax2=cx+165,axH=28;
+  const ag=iCtx.createLinearGradient(ax1,cy-axH/2,ax1,cy+axH/2);
+  ag.addColorStop(0,'#c9d1d9');ag.addColorStop(.4,'#8b949e');ag.addColorStop(1,'#3a4858');
+  iCtx.fillStyle=ag;iCtx.fillRect(ax1,cy-axH/2,ax2-ax1,axH);
+  iCtx.strokeStyle='#555';iCtx.lineWidth=1;iCtx.strokeRect(ax1,cy-axH/2,ax2-ax1,axH);
+  iCtx.strokeStyle='rgba(0,0,0,.4)';iCtx.lineWidth=1;
+  for(let x=ax1+20;x<ax2;x+=20){iCtx.beginPath();iCtx.moveTo(x,cy-axH/2);iCtx.lineTo(x,cy+axH/2);iCtx.stroke();}
+  iCtx.fillStyle='rgba(0,0,0,.6)';iCtx.fillRect(ax1+32,cy-axH/2-8,ax2-ax1-64,8);
+  iCtx.strokeStyle='rgba(88,166,255,.3)';iCtx.lineWidth=.6;iCtx.setLineDash([3,4]);
+  iCtx.beginPath();iCtx.moveTo(ax1,cy-48);iCtx.lineTo(ax2,cy-48);iCtx.stroke();iCtx.setLineDash([]);
+  iCtx.fillStyle='rgba(88,166,255,.65)';iCtx.font='12px Courier New';iCtx.textAlign='center';
+  iCtx.fillText('←———— 65cm EJE DE TRANSMISIÓN ————→',cx,cy-54);
+  ['Material: Acero SAE 1045','Diámetro: 20mm','Chavetero: 6×4mm','Tolerancia: h7'].forEach((t,i)=>{
+    iCtx.fillStyle='rgba(200,210,230,.6)';iCtx.font='12px Courier New';iCtx.textAlign='center';
+    iCtx.fillText(t,cx,cy+58+i*22);
+  });
+  iCtx.fillStyle='rgba(88,166,255,.5)';iCtx.font='13px Courier New';iCtx.textAlign='center';
+  iCtx.fillText('VISTA INTERIOR — EJE DE TRANSMISIÓN',cx,18);
+}
+function openInterior(){document.getElementById('intOverlay').classList.add('open');resize();}
+function closeInterior(){document.getElementById('intOverlay').classList.remove('open');}
+function setView(v){interiorView=v;for(let i=0;i<3;i++)document.getElementById('vt'+i).className=i===v?'vtab act':'vtab';}
+
+mc.addEventListener('click',e=>{
+  const rect=mc.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const {GCX,GCY,SQX,SQY,SQW,SQH,ROT_X,ROT_Y,ROT_R}=G;
+  if(Math.hypot(mx-ROT_X,my-ROT_Y)<ROT_R+22){setView(0);openInterior();}
+  else if(mx>SQX&&mx<SQX+SQW&&my>SQY&&my<SQY+SQH){setView(0);openInterior();}
+});
+
+// ── LOOP ──
+function loop(){
+  requestAnimationFrame(loop);
+  if(running){
+    const s=getSpeed();
+    const dt=s*.022*direction;
+    angle+=dt; rotorAngle+=dt*1.4; chainOffset+=s*1.5;
+    frameCount++;
+    if(frameCount%(Math.round(180/Math.max(s,.1)))===0){ cycles++; }
+  }
+  drawMain();
+  if(document.getElementById('intOverlay').classList.contains('open')) drawInterior();
+}
+
+loop();
+log('Sistema listo','#3fb950','Presiona 💊 DISPENSAR para comenzar');
+log('Ajusta RPM, Torque y más en la pestaña CONTROL','#8b949e');
+</script>
+</body>
+</html>
